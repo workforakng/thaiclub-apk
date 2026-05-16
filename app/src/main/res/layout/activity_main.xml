@@ -54,7 +54,7 @@
                 <EditText android:id="@+id/etJwt" android:layout_width="match_parent" android:layout_height="80dp" android:hint="JWT token" android:textColor="#E2E8F0" android:textColorHint="#64748B" android:background="#1E293B" android:gravity="top" android:padding="10dp" android:layout_marginTop="8dp"/>
                 <EditText android:id="@+id/etUsername" android:layout_width="match_parent" android:layout_height="44dp" android:hint="Username / Phone" android:textColor="#E2E8F0" android:textColorHint="#64748B" android:background="#1E293B" android:padding="10dp" android:layout_marginTop="8dp"/>
                 <EditText android:id="@+id/etPassword" android:layout_width="match_parent" android:layout_height="44dp" android:hint="Password" android:inputType="textPassword" android:textColor="#E2E8F0" android:textColorHint="#64748B" android:background="#1E293B" android:padding="10dp" android:layout_marginTop="8dp"/>
-                <Button android:id="@+id/btnConnect" android:layout_width="match_parent" android:layout_height="48dp" android:text="🚀 Connect & Verify" android:textStyle="bold" android:backgroundTint="#22C55E" android:textColor="#08111F" android:layout_marginTop="10dp"/>
+                <Button android:id="@+id/btnConnect" android:layout_width="match_parent" android:layout_height="48dp" android:text="🚀 Connect &amp; Verify" android:textStyle="bold" android:backgroundTint="#22C55E" android:textColor="#08111F" android:layout_marginTop="10dp"/>
             </LinearLayout>
 
             <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:background="#11182D" android:padding="12dp" android:layout_marginBottom="10dp">
