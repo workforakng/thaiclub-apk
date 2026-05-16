@@ -41,44 +41,47 @@ jobs:
 
       - name: Show project structure
         run: |
-          echo "=== Root ===" && ls -la
-          echo "=== gradle/wrapper ===" && ls -la gradle/wrapper/
-          echo "=== app/ ===" && ls -la app/
-          echo "=== Java home ===" && echo $JAVA_HOME
+          ls -la
+          ls -la gradle/wrapper/
           java -version
+          ./gradlew --version
 
       - name: Build Debug APK
-        run: |
-          ./gradlew assembleDebug --no-daemon --stacktrace --info 2>&1 | tail -100
+        run: ./gradlew assembleDebug --no-daemon --stacktrace
 
-      - name: Find APK
-        if: always()
-        run: find . -name "*.apk" 2>/dev/null && echo "done" || echo "No APK found"
+      - name: Verify APK exists
+        run: |
+          echo "=== Searching for APK ==="
+          find . -name "*.apk" -ls
+          APK=$(find . -name "*.apk" | head -1)
+          if [ -z "$APK" ]; then
+            echo "BUILD FAILED: No APK produced"
+            exit 1
+          fi
+          echo "APK found: $APK"
+          ls -lh "$APK"
 
       - name: Send APK to Telegram
-        if: always()
         run: |
-          APK=$(find . -name "*.apk" 2>/dev/null | head -1)
-          if [ -f "$APK" ]; then
-            echo "Found APK: $APK"
-            curl -s \
-              -F "chat_id=$TG_CHAT" \
-              -F "caption=ThaiClub AutoBet v3.2 - Kotlin Native APK" \
-              -F "document=@${APK}" \
-              "https://api.telegram.org/bot${TG_BOT}/sendDocument"
-          else
-            echo "No APK - sending log snippet"
-            curl -s \
-              -d "chat_id=$TG_CHAT" \
-              -d "text=Build step ran but no APK. Check GitHub Actions logs." \
-              "https://api.telegram.org/bot${TG_BOT}/sendMessage"
-          fi
+          APK=$(find . -name "*.apk" | head -1)
+          curl -s \
+            -F "chat_id=$TG_CHAT" \
+            -F "caption=ThaiClub AutoBet v3.2 - Kotlin Native" \
+            -F "document=@${APK}" \
+            "https://api.telegram.org/bot${TG_BOT}/sendDocument"
 
       - name: Upload APK Artifact
-        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: ThaiClub-AutoBet-v3.2
           path: app/build/outputs/apk/debug/*.apk
-          if-no-files-found: warn
+          if-no-files-found: error
           retention-days: 30
+
+      - name: Notify failure
+        if: failure()
+        run: |
+          curl -s \
+            -d "chat_id=$TG_CHAT" \
+            -d "text=❌ ThaiClub APK build FAILED. Check: https://github.com/workforakng/thaiclub-apk/actions" \
+            "https://api.telegram.org/bot${TG_BOT}/sendMessage"
