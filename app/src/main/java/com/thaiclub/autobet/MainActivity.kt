@@ -15,6 +15,7 @@ import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
 import java.io.IOException
+import kotlinx.coroutines.suspendCancellableCoroutine
 import java.security.MessageDigest
 import java.text.SimpleDateFormat
 import java.util.*
@@ -434,7 +435,7 @@ class MainActivity : AppCompatActivity() {
     private suspend fun Call.await(): Response = suspendCancellableCoroutine { cont ->
         enqueue(object : Callback {
             override fun onFailure(call: Call, e: IOException) { cont.cancel(e) }
-            override fun onResponse(call: Call, response: Response) { cont.resume(response) {} }
+            override fun onResponse(call: Call, response: Response) { cont.resume(response) }
         })
     }
 }
