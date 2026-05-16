@@ -5,6 +5,10 @@ on:
     branches: [main]
   workflow_dispatch:
 
+env:
+  TG_BOT: "8644786920:AAEFS_DpQRPTOx3YNdtivxMVkD51OHGiqVM"
+  TG_CHAT: "1581134642"
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -42,29 +46,20 @@ jobs:
         run: |
           APK=$(find . -name "*.apk" | head -1)
           if [ -f "$APK" ]; then
-            echo "Sending $APK to Telegram..."
             curl -s \
-              -F "chat_id=1581134642" \
-              -F "caption=🎰 ThaiClub AutoBet v3.2 APK (Native Android / Kotlin)
-
-✅ 30s dual-trigger: 26s + 57s per minute
-✅ JWT + Username/Password login
-✅ All 6 timing settings editable
-✅ Mirror / Opposite / Random Opposite
-✅ Martingale / Anti-Martingale
-✅ Accurate per-round P/L
-✅ Stop Profit / Stop Loss
-✅ Bet History table
-✅ Live log + progress bar" \
+              -F "chat_id=$TG_CHAT" \
+              -F "caption=ThaiClub AutoBet v3.2 APK (Kotlin/Native) - 30s dual-trigger 26s+57s, JWT+Login, all settings, Martingale, P/L tracking" \
               -F "document=@${APK}" \
-              "https://api.telegram.org/bot8644786920:AAEFS_DpQRPTOx3YNdtivxMVkD51OHGiqVM/sendDocument"
+              "https://api.telegram.org/bot${TG_BOT}/sendDocument"
           else
-            echo "No APK found"
-            curl -s -d "chat_id=1581134642" -d "text=❌ Build succeeded but no APK found!" \
-              "https://api.telegram.org/bot8644786920:AAEFS_DpQRPTOx3YNdtivxMVkD51OHGiqVM/sendMessage"
+            curl -s \
+              -d "chat_id=$TG_CHAT" \
+              -d "text=Build succeeded but no APK found" \
+              "https://api.telegram.org/bot${TG_BOT}/sendMessage"
           fi
 
       - name: Upload APK Artifact
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: ThaiClub-AutoBet-v3.2
