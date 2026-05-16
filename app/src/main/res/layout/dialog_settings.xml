@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent" android:layout_height="wrap_content"
+    android:background="#12151F" android:padding="16dp">
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:orientation="vertical">
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="30S MODE — 2 rounds/min: 26s + 57s" android:textColor="#00D4AA"
+            android:textSize="12sp" android:textStyle="bold" android:layout_marginBottom="10dp"/>
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="Trigger Second #1 (default: 26)" android:textColor="#94A3B8"
+            android:textSize="11sp" android:layout_marginBottom="3dp"/>
+        <EditText android:id="@+id/setTrig1" android:layout_width="match_parent"
+            android:layout_height="44dp" android:background="#1A1E2E" android:textColor="#E2E8F0"
+            android:inputType="number" android:padding="10dp" android:layout_marginBottom="8dp"/>
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="Trigger Second #2 (default: 57)" android:textColor="#94A3B8"
+            android:textSize="11sp" android:layout_marginBottom="3dp"/>
+        <EditText android:id="@+id/setTrig2" android:layout_width="match_parent"
+            android:layout_height="44dp" android:background="#1A1E2E" android:textColor="#E2E8F0"
+            android:inputType="number" android:padding="10dp" android:layout_marginBottom="8dp"/>
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="Pre-fetch Issue At #1 (default: 20)" android:textColor="#94A3B8"
+            android:textSize="11sp" android:layout_marginBottom="3dp"/>
+        <EditText android:id="@+id/setFetch1" android:layout_width="match_parent"
+            android:layout_height="44dp" android:background="#1A1E2E" android:textColor="#E2E8F0"
+            android:inputType="number" android:padding="10dp" android:layout_marginBottom="8dp"/>
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="Pre-fetch Issue At #2 (default: 50)" android:textColor="#94A3B8"
+            android:textSize="11sp" android:layout_marginBottom="3dp"/>
+        <EditText android:id="@+id/setFetch2" android:layout_width="match_parent"
+            android:layout_height="44dp" android:background="#1A1E2E" android:textColor="#E2E8F0"
+            android:inputType="number" android:padding="10dp" android:layout_marginBottom="8dp"/>
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="Balance Check At #1 (default: 10)" android:textColor="#94A3B8"
+            android:textSize="11sp" android:layout_marginBottom="3dp"/>
+        <EditText android:id="@+id/setBal1" android:layout_width="match_parent"
+            android:layout_height="44dp" android:background="#1A1E2E" android:textColor="#E2E8F0"
+            android:inputType="number" android:padding="10dp" android:layout_marginBottom="8dp"/>
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="Balance Check At #2 (default: 40)" android:textColor="#94A3B8"
+            android:textSize="11sp" android:layout_marginBottom="3dp"/>
+        <EditText android:id="@+id/setBal2" android:layout_width="match_parent"
+            android:layout_height="44dp" android:background="#1A1E2E" android:textColor="#E2E8F0"
+            android:inputType="number" android:padding="10dp" android:layout_marginBottom="8dp"/>
+        <View android:layout_width="match_parent" android:layout_height="1dp"
+            android:background="#1A1E2E" android:layout_marginBottom="10dp"/>
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="Settlement Delay seconds (default: 10)" android:textColor="#94A3B8"
+            android:textSize="11sp" android:layout_marginBottom="3dp"/>
+        <EditText android:id="@+id/setSettle" android:layout_width="match_parent"
+            android:layout_height="44dp" android:background="#1A1E2E" android:textColor="#E2E8F0"
+            android:inputType="number" android:padding="10dp" android:layout_marginBottom="8dp"/>
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="Stop Profit ₹ (0 = disabled)" android:textColor="#94A3B8"
+            android:textSize="11sp" android:layout_marginBottom="3dp"/>
+        <EditText android:id="@+id/setProfit" android:layout_width="match_parent"
+            android:layout_height="44dp" android:background="#1A1E2E" android:textColor="#E2E8F0"
+            android:inputType="numberDecimal" android:padding="10dp" android:layout_marginBottom="8dp"/>
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="Stop Loss ₹ (0 = disabled)" android:textColor="#94A3B8"
+            android:textSize="11sp" android:layout_marginBottom="3dp"/>
+        <EditText android:id="@+id/setLoss" android:layout_width="match_parent"
+            android:layout_height="44dp" android:background="#1A1E2E" android:textColor="#E2E8F0"
+            android:inputType="numberDecimal" android:padding="10dp"/>
+    </LinearLayout>
+</ScrollView>
