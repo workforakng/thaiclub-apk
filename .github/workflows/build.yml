@@ -1,0 +1,96 @@
+name: Build ThaiClub APK
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends \
+            git zip unzip wget curl \
+            openjdk-17-jdk \
+            autoconf libtool pkg-config \
+            zlib1g-dev libncurses5-dev libncursesw5-dev \
+            libtinfo5 cmake libffi-dev libssl-dev \
+            ccache build-essential libltdl-dev
+
+      - name: Set JAVA_HOME
+        run: |
+          echo "JAVA_HOME=$(dirname $(dirname $(readlink -f $(which java))))" >> $GITHUB_ENV
+          java -version
+
+      - name: Install Python build tools
+        run: |
+          pip install --upgrade pip wheel setuptools
+          pip install buildozer==1.5.0 Cython==0.29.33 virtualenv
+
+      - name: Cache buildozer global dir
+        uses: actions/cache@v4
+        with:
+          path: ~/.buildozer
+          key: ${{ runner.os }}-buildozer-${{ hashFiles('buildozer.spec') }}-v3
+          restore-keys: |
+            ${{ runner.os }}-buildozer-
+
+      - name: Accept Android SDK licenses
+        run: |
+          mkdir -p $HOME/.buildozer/android/platform/android-sdk/licenses
+          printf "\n24333f8a63b6825ea9c5514f83c2829b004d1fee\n" > $HOME/.buildozer/android/platform/android-sdk/licenses/android-sdk-license
+          printf "\n84831b9409646a918e30573bab4c9c91346d8abd\n" > $HOME/.buildozer/android/platform/android-sdk/licenses/android-sdk-preview-license
+          printf "\nd975f751698a77b662f1254ddbeed3901e976f5a\n" > $HOME/.buildozer/android/platform/android-sdk/licenses/intel-android-extra-license
+          printf "\n33b6a2b64607f11b759f320ef9dff4ae5c47d97a\n" >> $HOME/.buildozer/android/platform/android-sdk/licenses/android-sdk-license
+          printf "\ne9acab5b5fbb560a72cfaecce8946896ff6aab9d\n" > $HOME/.buildozer/android/platform/android-sdk/licenses/android-googletv-license
+          printf "\n601085b94cd77f0b54ff86406957099ebe79c4d5\n" > $HOME/.buildozer/android/platform/android-sdk/licenses/android-sdk-arm-dbt-license
+          printf "\n859f317696f67ef3d7f30a50a5560e7834b43903\n" > $HOME/.buildozer/android/platform/android-sdk/licenses/google-gdk-license
+          printf "\n33b6a2b64607f11b759f320ef9dff4ae5c47d97a\n" > $HOME/.buildozer/android/platform/android-sdk/licenses/mips-android-sysimage-license
+
+      - name: Pre-install cmdline-tools and accept licenses via sdkmanager
+        run: |
+          ANDROID_SDK_ROOT=$HOME/.buildozer/android/platform/android-sdk
+          mkdir -p $ANDROID_SDK_ROOT/cmdline-tools
+          cd /tmp
+          wget -q https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
+          unzip -q commandlinetools-linux-11076708_latest.zip -d cmdlinetools
+          mkdir -p $ANDROID_SDK_ROOT/cmdline-tools/latest
+          cp -r cmdlinetools/cmdline-tools/* $ANDROID_SDK_ROOT/cmdline-tools/latest/
+          export PATH=$ANDROID_SDK_ROOT/cmdline-tools/latest/bin:$PATH
+          yes | sdkmanager --sdk_root=$ANDROID_SDK_ROOT --licenses || true
+          yes | sdkmanager --sdk_root=$ANDROID_SDK_ROOT "build-tools;33.0.2" "platforms;android-33" "platform-tools" || true
+
+      - name: Build APK (debug)
+        env:
+          ANDROID_SDK_ROOT: ${{ env.HOME }}/.buildozer/android/platform/android-sdk
+        run: |
+          buildozer -v android debug 2>&1 | tee build.log
+          echo "=== BUILD COMPLETE ==="
+          ls -lh bin/ 2>/dev/null || echo "No APK found - check build.log"
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: ThaiClub-AutoBet-v3.2-debug
+          path: bin/*.apk
+          if-no-files-found: warn
+          retention-days: 30
+
+      - name: Upload build log on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-log
+          path: build.log
+          retention-days: 7
