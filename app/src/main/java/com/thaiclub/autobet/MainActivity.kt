@@ -434,8 +434,13 @@ class MainActivity : AppCompatActivity() {
 
     private suspend fun Call.await(): Response = suspendCancellableCoroutine { cont ->
         enqueue(object : Callback {
-            override fun onFailure(call: Call, e: IOException) { cont.cancel(e) }
-            override fun onResponse(call: Call, response: Response) { cont.resume(response) }
+            override fun onFailure(call: Call, e: IOException) {
+                if (!cont.isCancelled) cont.cancel(e)
+            }
+            override fun onResponse(call: Call, response: Response) {
+                cont.resume(response) { response.close() }
+            }
         })
+        cont.invokeOnCancellation { this.cancel() }
     }
 }
