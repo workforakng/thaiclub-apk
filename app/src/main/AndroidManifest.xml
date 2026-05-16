@@ -4,7 +4,9 @@
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
     <application
         android:allowBackup="true"
-        android:label="ThaiClub AutoBet"
+        android:icon="@android:drawable/btn_star_big_on"
+        android:roundIcon="@android:drawable/btn_star_big_on"
+        android:label="🎰 ThaiClub AutoBet"
         android:theme="@style/Theme.ThaiClubAutoBet"
         android:usesCleartextTraffic="true">
         <activity
