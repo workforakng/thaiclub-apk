@@ -7,136 +7,66 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-22.04
-
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: Show repo structure
-        run: |
-          echo "=== Repo root ==="
-          ls -la
-          echo "=== src/ ==="
-          ls -la src/ 2>/dev/null || echo "No src/ folder"
-          echo "=== buildozer.spec ==="
-          cat buildozer.spec
-
-      - name: Set up Python 3.11
-        uses: actions/setup-python@v5
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
         with:
-          python-version: "3.11"
+          java-version: '17'
+          distribution: 'temurin'
 
-      - name: Install system dependencies
-        run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y --no-install-recommends \
-            git zip unzip wget curl openjdk-17-jdk \
-            autoconf libtool pkg-config zlib1g-dev \
-            libncurses5-dev libncursesw5-dev libtinfo5 \
-            cmake libffi-dev libssl-dev ccache build-essential \
-            lld binutils libgcc-10-dev
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
 
-      - name: Set JAVA_HOME
-        run: echo "JAVA_HOME=$(dirname $(dirname $(readlink -f $(which java))))" >> $GITHUB_ENV
-
-      - name: Install buildozer and Cython
-        run: |
-          pip install --upgrade pip wheel setuptools
-          pip install buildozer==1.5.0 Cython==0.29.33 virtualenv
-
-      - name: Cache buildozer global dir
+      - name: Cache Gradle packages
         uses: actions/cache@v4
         with:
-          path: ~/.buildozer
-          key: ${{ runner.os }}-buildozer-full-v6
-          restore-keys: |
-            ${{ runner.os }}-buildozer-
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*','**/gradle-wrapper.properties') }}
+          restore-keys: ${{ runner.os }}-gradle-
 
-      - name: Pre-install Android SDK + accept all licenses
-        run: |
-          SDK=$HOME/.buildozer/android/platform/android-sdk
-          mkdir -p $SDK/licenses $SDK/cmdline-tools
-          # Write all known license hashes
-          {
-            printf "24333f8a63b6825ea9c5514f83c2829b004d1fee\n"
-            printf "33b6a2b64607f11b759f320ef9dff4ae5c47d97a\n"
-            printf "d56f5187479451eabf01fb78af6dfcb131a6481e\n"
-          } > $SDK/licenses/android-sdk-license
-          printf "84831b9409646a918e30573bab4c9c91346d8abd\n" > $SDK/licenses/android-sdk-preview-license
-          printf "d975f751698a77b662f1254ddbeed3901e976f5a\n" > $SDK/licenses/intel-android-extra-license
-          printf "e9acab5b5fbb560a72cfaecce8946896ff6aab9d\n" > $SDK/licenses/android-googletv-license
-          printf "601085b94cd77f0b54ff86406957099ebe79c4d5\n" > $SDK/licenses/android-sdk-arm-dbt-license
-          printf "859f317696f67ef3d7f30a50a5560e7834b43903\n" > $SDK/licenses/google-gdk-license
-          # Install cmdline-tools
-          cd /tmp
-          wget -q https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip -O cmdtools.zip
-          unzip -q cmdtools.zip -d cmdlinetools
-          mkdir -p $SDK/cmdline-tools/latest
-          cp -r cmdlinetools/cmdline-tools/* $SDK/cmdline-tools/latest/
-          export PATH=$SDK/cmdline-tools/latest/bin:$PATH
-          yes | sdkmanager --sdk_root=$SDK --licenses 2>/dev/null || true
-          yes | sdkmanager --sdk_root=$SDK \
-            "build-tools;33.0.2" \
-            "platforms;android-33" \
-            "platform-tools" \
-            "ndk;25.2.9519653" 2>/dev/null || true
-          echo "SDK contents:"
-          ls $SDK/
+      - name: Make gradlew executable
+        run: chmod +x ./gradlew
 
-      - name: Build APK with buildozer
-        run: |
-          echo "Starting buildozer..."
-          buildozer -v android debug 2>&1 | tee build.log
-          echo "=== Build finished ==="
-          echo "=== Searching for APK ==="
-          find /root /home -name "*.apk" 2>/dev/null || true
-          find . -name "*.apk" 2>/dev/null || true
-          ls -lh bin/ 2>/dev/null || echo "No bin/ dir"
+      - name: Build Debug APK
+        run: ./gradlew assembleDebug --no-daemon --stacktrace
+
+      - name: Find APK
+        run: find . -name "*.apk" -exec ls -lh {} \;
 
       - name: Send APK to Telegram
-        if: always()
         run: |
-          APK=$(find . -name "*.apk" 2>/dev/null | head -1)
-          if [ -n "$APK" ] && [ -f "$APK" ]; then
-            echo "Found APK: $APK ($(du -h $APK | cut -f1))"
+          APK=$(find . -name "*.apk" | head -1)
+          if [ -f "$APK" ]; then
+            echo "Sending $APK to Telegram..."
             curl -s \
               -F "chat_id=1581134642" \
-              -F "caption=🎰 ThaiClub AutoBet v3.2 APK Ready!
+              -F "caption=🎰 ThaiClub AutoBet v3.2 APK (Native Android / Kotlin)
 
-✅ 30s mode: bets at 26s + 57s each minute
+✅ 30s dual-trigger: 26s + 57s per minute
 ✅ JWT + Username/Password login
-✅ All timing settings editable
+✅ All 6 timing settings editable
+✅ Mirror / Opposite / Random Opposite
 ✅ Martingale / Anti-Martingale
 ✅ Accurate per-round P/L
-✅ Stop Profit / Stop Loss" \
+✅ Stop Profit / Stop Loss
+✅ Bet History table
+✅ Live log + progress bar" \
               -F "document=@${APK}" \
               "https://api.telegram.org/bot8644786920:AAEFS_DpQRPTOx3YNdtivxMVkD51OHGiqVM/sendDocument"
           else
-            echo "No APK found!"
-            LAST_LINES=$(tail -50 build.log 2>/dev/null | tr -d '"'"'"'"'"')
-            curl -s \
-              -d "chat_id=1581134642" \
-              -d "text=❌ APK not produced. Last build log:
-
-${LAST_LINES}" \
+            echo "No APK found"
+            curl -s -d "chat_id=1581134642" -d "text=❌ Build succeeded but no APK found!" \
               "https://api.telegram.org/bot8644786920:AAEFS_DpQRPTOx3YNdtivxMVkD51OHGiqVM/sendMessage"
           fi
 
-      - name: Upload APK artifact
-        if: always()
+      - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ThaiClub-AutoBet-APK
-          path: |
-            **/*.apk
-          if-no-files-found: warn
+          name: ThaiClub-AutoBet-v3.2
+          path: app/build/outputs/apk/debug/*.apk
           retention-days: 30
-
-      - name: Upload build log
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: build-log
-          path: build.log
-          if-no-files-found: ignore
-          retention-days: 7
