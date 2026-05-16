@@ -24,10 +24,8 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v3
-        with:
-          gradle-version: '8.4'
+      - name: Accept Android Licenses
+        run: yes | sdkmanager --licenses 2>/dev/null || true
 
       - name: Cache Gradle packages
         uses: actions/cache@v4
@@ -38,25 +36,41 @@ jobs:
           key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*') }}
           restore-keys: ${{ runner.os }}-gradle-
 
+      - name: Make gradlew executable
+        run: chmod +x ./gradlew
+
+      - name: Show project structure
+        run: |
+          echo "=== Root ===" && ls -la
+          echo "=== gradle/wrapper ===" && ls -la gradle/wrapper/
+          echo "=== app/ ===" && ls -la app/
+          echo "=== Java home ===" && echo $JAVA_HOME
+          java -version
+
       - name: Build Debug APK
-        run: gradle assembleDebug --no-daemon --stacktrace
+        run: |
+          ./gradlew assembleDebug --no-daemon --stacktrace --info 2>&1 | tail -100
 
       - name: Find APK
-        run: find . -name "*.apk" -exec ls -lh {} \;
+        if: always()
+        run: find . -name "*.apk" 2>/dev/null && echo "done" || echo "No APK found"
 
       - name: Send APK to Telegram
+        if: always()
         run: |
-          APK=$(find . -name "*.apk" | head -1)
+          APK=$(find . -name "*.apk" 2>/dev/null | head -1)
           if [ -f "$APK" ]; then
+            echo "Found APK: $APK"
             curl -s \
               -F "chat_id=$TG_CHAT" \
-              -F "caption=ThaiClub AutoBet v3.2 APK - Kotlin Native - 30s 26s+57s triggers" \
+              -F "caption=ThaiClub AutoBet v3.2 - Kotlin Native APK" \
               -F "document=@${APK}" \
               "https://api.telegram.org/bot${TG_BOT}/sendDocument"
           else
+            echo "No APK - sending log snippet"
             curl -s \
               -d "chat_id=$TG_CHAT" \
-              -d "text=Build OK but no APK found - check logs" \
+              -d "text=Build step ran but no APK. Check GitHub Actions logs." \
               "https://api.telegram.org/bot${TG_BOT}/sendMessage"
           fi
 
@@ -66,4 +80,5 @@ jobs:
         with:
           name: ThaiClub-AutoBet-v3.2
           path: app/build/outputs/apk/debug/*.apk
+          if-no-files-found: warn
           retention-days: 30
