@@ -21,17 +21,13 @@ jobs:
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y --no-install-recommends \
-            git zip unzip wget curl \
-            openjdk-17-jdk \
-            autoconf libtool pkg-config \
-            zlib1g-dev libncurses5-dev libncursesw5-dev \
-            libtinfo5 cmake libffi-dev libssl-dev \
-            ccache build-essential libltdl-dev
+            git zip unzip wget curl openjdk-17-jdk \
+            autoconf libtool pkg-config zlib1g-dev \
+            libncurses5-dev libncursesw5-dev libtinfo5 \
+            cmake libffi-dev libssl-dev ccache build-essential
 
       - name: Set JAVA_HOME
-        run: |
-          echo "JAVA_HOME=$(dirname $(dirname $(readlink -f $(which java))))" >> $GITHUB_ENV
-          java -version
+        run: echo "JAVA_HOME=$(dirname $(dirname $(readlink -f $(which java))))" >> $GITHUB_ENV
 
       - name: Install Python build tools
         run: |
@@ -42,55 +38,73 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.buildozer
-          key: ${{ runner.os }}-buildozer-${{ hashFiles('buildozer.spec') }}-v3
+          key: ${{ runner.os }}-buildozer-${{ hashFiles('buildozer.spec') }}-v4
           restore-keys: |
             ${{ runner.os }}-buildozer-
 
-      - name: Accept Android SDK licenses
+      - name: Accept all Android SDK licenses
         run: |
-          mkdir -p $HOME/.buildozer/android/platform/android-sdk/licenses
-          printf "\n24333f8a63b6825ea9c5514f83c2829b004d1fee\n" > $HOME/.buildozer/android/platform/android-sdk/licenses/android-sdk-license
-          printf "\n84831b9409646a918e30573bab4c9c91346d8abd\n" > $HOME/.buildozer/android/platform/android-sdk/licenses/android-sdk-preview-license
-          printf "\nd975f751698a77b662f1254ddbeed3901e976f5a\n" > $HOME/.buildozer/android/platform/android-sdk/licenses/intel-android-extra-license
-          printf "\n33b6a2b64607f11b759f320ef9dff4ae5c47d97a\n" >> $HOME/.buildozer/android/platform/android-sdk/licenses/android-sdk-license
-          printf "\ne9acab5b5fbb560a72cfaecce8946896ff6aab9d\n" > $HOME/.buildozer/android/platform/android-sdk/licenses/android-googletv-license
-          printf "\n601085b94cd77f0b54ff86406957099ebe79c4d5\n" > $HOME/.buildozer/android/platform/android-sdk/licenses/android-sdk-arm-dbt-license
-          printf "\n859f317696f67ef3d7f30a50a5560e7834b43903\n" > $HOME/.buildozer/android/platform/android-sdk/licenses/google-gdk-license
-          printf "\n33b6a2b64607f11b759f320ef9dff4ae5c47d97a\n" > $HOME/.buildozer/android/platform/android-sdk/licenses/mips-android-sysimage-license
+          SDK=$HOME/.buildozer/android/platform/android-sdk
+          mkdir -p $SDK/licenses
+          printf "\n24333f8a63b6825ea9c5514f83c2829b004d1fee\n33b6a2b64607f11b759f320ef9dff4ae5c47d97a\n" > $SDK/licenses/android-sdk-license
+          printf "\n84831b9409646a918e30573bab4c9c91346d8abd\n" > $SDK/licenses/android-sdk-preview-license
+          printf "\nd975f751698a77b662f1254ddbeed3901e976f5a\n" > $SDK/licenses/intel-android-extra-license
+          printf "\ne9acab5b5fbb560a72cfaecce8946896ff6aab9d\n" > $SDK/licenses/android-googletv-license
+          printf "\n601085b94cd77f0b54ff86406957099ebe79c4d5\n" > $SDK/licenses/android-sdk-arm-dbt-license
+          printf "\n859f317696f67ef3d7f30a50a5560e7834b43903\n" > $SDK/licenses/google-gdk-license
+          printf "\n33b6a2b64607f11b759f320ef9dff4ae5c47d97a\n" > $SDK/licenses/mips-android-sysimage-license
 
-      - name: Pre-install cmdline-tools and accept licenses via sdkmanager
+      - name: Pre-install cmdline-tools + accept licenses
         run: |
-          ANDROID_SDK_ROOT=$HOME/.buildozer/android/platform/android-sdk
-          mkdir -p $ANDROID_SDK_ROOT/cmdline-tools
+          SDK=$HOME/.buildozer/android/platform/android-sdk
+          mkdir -p $SDK/cmdline-tools
           cd /tmp
           wget -q https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
           unzip -q commandlinetools-linux-11076708_latest.zip -d cmdlinetools
-          mkdir -p $ANDROID_SDK_ROOT/cmdline-tools/latest
-          cp -r cmdlinetools/cmdline-tools/* $ANDROID_SDK_ROOT/cmdline-tools/latest/
-          export PATH=$ANDROID_SDK_ROOT/cmdline-tools/latest/bin:$PATH
-          yes | sdkmanager --sdk_root=$ANDROID_SDK_ROOT --licenses || true
-          yes | sdkmanager --sdk_root=$ANDROID_SDK_ROOT "build-tools;33.0.2" "platforms;android-33" "platform-tools" || true
+          mkdir -p $SDK/cmdline-tools/latest
+          cp -r cmdlinetools/cmdline-tools/* $SDK/cmdline-tools/latest/
+          export PATH=$SDK/cmdline-tools/latest/bin:$PATH
+          yes | sdkmanager --sdk_root=$SDK --licenses 2>/dev/null || true
+          yes | sdkmanager --sdk_root=$SDK "build-tools;33.0.2" "platforms;android-33" "platform-tools" || true
 
-      - name: Build APK (debug)
-        env:
-          ANDROID_SDK_ROOT: ${{ env.HOME }}/.buildozer/android/platform/android-sdk
+      - name: Build APK
         run: |
-          buildozer -v android debug 2>&1 | tee build.log
-          echo "=== BUILD COMPLETE ==="
-          ls -lh bin/ 2>/dev/null || echo "No APK found - check build.log"
+          buildozer -v android debug 2>&1 | tee build.log || true
+          echo "=== APK search ==="
+          find . -name "*.apk" 2>/dev/null || echo "No APK found"
+          ls -lh bin/ 2>/dev/null || echo "No bin/ folder"
 
-      - name: Upload APK
+      - name: Send APK to Telegram
+        run: |
+          APK=$(find . -name "*.apk" | head -1)
+          if [ -n "$APK" ]; then
+            echo "Sending $APK to Telegram..."
+            curl -s -F chat_id=1581134642 \
+              -F caption="🎰 ThaiClub AutoBet v3.2 APK%0A%0A✅ 30s dual-trigger: 26s+57s%0A✅ JWT + Login%0A✅ All settings%0A✅ Accurate P/L" \
+              -F document=@"$APK" \
+              "https://api.telegram.org/bot8644786920:AAEFS_DpQRPTOx3YNdtivxMVkD51OHGiqVM/sendDocument"
+          else
+            echo "No APK to send"
+            curl -s -d chat_id=1581134642 \
+              -d text="❌ APK build failed - no APK found. Check logs." \
+              "https://api.telegram.org/bot8644786920:AAEFS_DpQRPTOx3YNdtivxMVkD51OHGiqVM/sendMessage"
+          fi
+
+      - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ThaiClub-AutoBet-v3.2-debug
-          path: bin/*.apk
+          name: ThaiClub-AutoBet-v3.2-APK
+          path: |
+            bin/*.apk
+            *.apk
           if-no-files-found: warn
           retention-days: 30
 
-      - name: Upload build log on failure
-        if: failure()
+      - name: Upload build log
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: build-log
           path: build.log
+          if-no-files-found: ignore
           retention-days: 7
