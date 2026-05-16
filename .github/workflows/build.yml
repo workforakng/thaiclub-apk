@@ -24,20 +24,22 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+        with:
+          gradle-version: '8.4'
+
       - name: Cache Gradle packages
         uses: actions/cache@v4
         with:
           path: |
             ~/.gradle/caches
             ~/.gradle/wrapper
-          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*','**/gradle-wrapper.properties') }}
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*') }}
           restore-keys: ${{ runner.os }}-gradle-
 
-      - name: Make gradlew executable
-        run: chmod +x ./gradlew
-
       - name: Build Debug APK
-        run: ./gradlew assembleDebug --no-daemon --stacktrace
+        run: gradle assembleDebug --no-daemon --stacktrace
 
       - name: Find APK
         run: find . -name "*.apk" -exec ls -lh {} \;
@@ -48,13 +50,13 @@ jobs:
           if [ -f "$APK" ]; then
             curl -s \
               -F "chat_id=$TG_CHAT" \
-              -F "caption=ThaiClub AutoBet v3.2 APK (Kotlin/Native) - 30s dual-trigger 26s+57s, JWT+Login, all settings, Martingale, P/L tracking" \
+              -F "caption=ThaiClub AutoBet v3.2 APK - Kotlin Native - 30s 26s+57s triggers" \
               -F "document=@${APK}" \
               "https://api.telegram.org/bot${TG_BOT}/sendDocument"
           else
             curl -s \
               -d "chat_id=$TG_CHAT" \
-              -d "text=Build succeeded but no APK found" \
+              -d "text=Build OK but no APK found - check logs" \
               "https://api.telegram.org/bot${TG_BOT}/sendMessage"
           fi
 
